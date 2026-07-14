@@ -126,3 +126,7 @@ rejection.
 
 The design sufficiency rubric and remaining non-blocking work are documented in
 [DESIGN-SUFFICIENCY.md](docs/DESIGN-SUFFICIENCY.md).
+
+## License
+
+Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE).
