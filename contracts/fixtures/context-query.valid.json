@@ -1,0 +1,16 @@
+{
+  "schema": "boros.context-query/v1",
+  "roots": [
+    {
+      "system": "boros",
+      "type": "experiment",
+      "id": "EXP-0001",
+      "version": "2"
+    }
+  ],
+  "purpose": "prepare an Ouro replay",
+  "asOf": "2026-07-14T00:00:00.000Z",
+  "tokenBudget": 4000,
+  "maxResources": 30,
+  "allowedSensitivities": ["public", "internal"]
+}
