@@ -62,7 +62,7 @@ const COMMANDS = new Map<string, Command>([
 export async function runCli(argv: string[], io: CliIo): Promise<void> {
   const commandName = argv[0] ?? "help";
   const command = COMMANDS.get(commandName);
-  if (!command) throw new Error(`Unknown command: ${commandName}\nRun boros help.`);
+  if (!command) throw new Error(`Unknown command: ${commandName}\nRun bouro help.`);
   const remaining = commandName === "evidence" && argv[1] === "register" ? argv.slice(2) : argv.slice(1);
   const parsed = parseArgs(remaining);
   if (parsed.help) return helpCommand({}, io);
@@ -235,7 +235,7 @@ async function contextCommand(options: CommandOptions, io: CliIo): Promise<void>
   await mutate(options, io, (store) => {
     const asOf = optionalString(options["as-of"]);
     const query: ContextQueryV1 = {
-      schema: "boros.context-query/v1",
+      schema: "bouro.context-query/v1",
       roots: normalizeList(options.root).map((id) => resolveRef(store, id, asOf)),
       purpose: required(options.purpose, "purpose"),
       ...(asOf ? { asOf } : {}),
@@ -260,7 +260,7 @@ async function showCommand(options: CommandOptions, io: CliIo): Promise<void> {
   }
   const revision = options.version
     ? getRevision(store, {
-        system: "boros",
+        system: "bouro",
         type: getHead(store, id).kind,
         id,
         version: String(options.version),
@@ -300,7 +300,7 @@ async function demoCommand(options: CommandOptions, io: CliIo): Promise<void> {
 }
 
 function helpCommand(_options: CommandOptions, io: CliIo): void {
-  io.stdout.write(`${basename(process.argv[1] ?? "boros")} commands:
+  io.stdout.write(`${basename(process.argv[1] ?? "bouro")} commands:
 
   init | doctor | status | ontology | audit [--limit 20]
   concept --title <text> --statement <text> [--alias <text> ...]
@@ -309,7 +309,7 @@ function helpCommand(_options: CommandOptions, io: CliIo): void {
   hypothesis --title <text> --claim <CLM-id> --question <QST-id> --closes-when <text>
   experiment --title <text> --question <QST-id> --hypothesis <HYP-id> --success <text>
   procedure --title <text> --purpose <text> [--implementation-uri <uri> --implementation-version <version>]
-  evidence register --input <boros.register-evidence/v1.json>
+  evidence register --input <bouro.register-evidence/v1.json>
   decision --title <text> --question <QST-id> --evidence <EVD-id> --outcome <text> --rationale <text>
   relate --type <relation> --from <id> --to <id>
   revise --id <id> [--status <status>] [--attributes <json>]
@@ -318,7 +318,7 @@ function helpCommand(_options: CommandOptions, io: CliIo): void {
   demo
 
 Global:
-  --vault <path>  Use a specific Boros JSON vault.
+  --vault <path>  Use a specific Bouro JSON vault.
 `);
 }
 

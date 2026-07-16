@@ -1,11 +1,11 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://semigrp.dev/boros/contracts/register-evidence.v1.schema.json",
+  "$id": "https://semigrp.dev/bouro/contracts/register-evidence.v1.schema.json",
   "title": "RegisterEvidenceCommandV1",
   "type": "object",
   "required": ["schema", "source", "sourceEventId", "evidence"],
   "properties": {
-    "schema": { "const": "boros.register-evidence/v1" },
+    "schema": { "const": "bouro.register-evidence/v1" },
     "source": { "type": "string", "minLength": 1 },
     "sourceEventId": { "type": "string", "minLength": 1 },
     "evidence": {

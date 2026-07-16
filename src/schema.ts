@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto";
 
 export const STORE_VERSION = 2;
-export const STORE_SCHEMA = "boros.store/v2" as const;
-export const ONTOLOGY_ID = "boros-core";
+export const STORE_SCHEMA = "bouro.store/v2" as const;
+export const ONTOLOGY_ID = "bouro-core";
 export const ONTOLOGY_VERSION = "1.0.0";
 
 export const KINDS = {
@@ -77,7 +77,7 @@ export type TemporalRecord = {
 };
 
 export type KnowledgeRevision = {
-  schema: "boros.knowledge-revision/v1";
+  schema: "bouro.knowledge-revision/v1";
   id: string;
   kind: Kind;
   version: string;
@@ -91,7 +91,7 @@ export type KnowledgeRevision = {
 };
 
 export type KnowledgeRelation = {
-  schema: "boros.knowledge-relation/v1";
+  schema: "bouro.knowledge-relation/v1";
   id: string;
   type: RelationType;
   from: ResourceRefV1;
@@ -110,7 +110,7 @@ export type AuditEvent = {
 };
 
 export type OntologyRelease = {
-  schema: "boros.ontology-release/v1";
+  schema: "bouro.ontology-release/v1";
   id: string;
   version: string;
   releasedAt: string;
@@ -119,7 +119,7 @@ export type OntologyRelease = {
 };
 
 export type ContextQueryV1 = {
-  schema: "boros.context-query/v1";
+  schema: "bouro.context-query/v1";
   roots: ResourceRefV1[];
   purpose: string;
   asOf?: string;
@@ -136,7 +136,7 @@ export type ContextSelection = {
 };
 
 export type ContextBundle = {
-  schema: "boros.context-bundle/v1";
+  schema: "bouro.context-bundle/v1";
   id: string;
   createdAt: string;
   ontology: ResourceRefV1;
@@ -149,7 +149,7 @@ export type ContextBundle = {
 };
 
 export type LegacyPartition = {
-  migratedFrom: "boros.store/v1";
+  migratedFrom: "bouro.store/v1";
   objects: unknown[];
   edges: unknown[];
   events: unknown[];
@@ -326,7 +326,7 @@ export function emptyStore(now = nowIso()): Store {
 
 export function currentOntologyRelease(): OntologyRelease {
   return {
-    schema: "boros.ontology-release/v1",
+    schema: "bouro.ontology-release/v1",
     id: ONTOLOGY_ID,
     version: ONTOLOGY_VERSION,
     releasedAt: "2026-07-14T00:00:00.000Z",
@@ -341,7 +341,7 @@ export function currentOntologyRelease(): OntologyRelease {
 
 export function ontologyRef(release = currentOntologyRelease()): ResourceRefV1 {
   return {
-    system: "boros",
+    system: "bouro",
     type: "ontology_release",
     id: release.id,
     version: release.version,
@@ -351,7 +351,7 @@ export function ontologyRef(release = currentOntologyRelease()): ResourceRefV1 {
 
 export function refForRevision(revision: KnowledgeRevision): ResourceRefV1 {
   return {
-    system: "boros",
+    system: "bouro",
     type: revision.kind,
     id: revision.id,
     version: revision.version,

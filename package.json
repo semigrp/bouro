@@ -1,17 +1,17 @@
 {
-  "name": "@semigrp/boros",
+  "name": "@semigrp/bouro",
   "version": "0.2.0",
   "description": "A local-first ontology-backed knowledge graph and epistemic ledger for agent loops.",
   "type": "module",
   "bin": {
-    "boros": "./dist/bin/boros.js"
+    "bouro": "./dist/bin/bouro.js"
   },
   "scripts": {
-    "build": "rm -rf dist && tsc -p tsconfig.json && chmod +x dist/bin/boros.js",
+    "build": "rm -rf dist && tsc -p tsconfig.json && chmod +x dist/bin/bouro.js",
     "test": "pnpm run build && node --test dist/test/*.test.js",
-    "doctor": "pnpm run build && node ./dist/bin/boros.js doctor",
-    "demo": "pnpm run build && node ./dist/bin/boros.js demo",
-    "audit": "pnpm run build && node ./dist/bin/boros.js audit"
+    "doctor": "pnpm run build && node ./dist/bin/bouro.js doctor",
+    "demo": "pnpm run build && node ./dist/bin/bouro.js demo",
+    "audit": "pnpm run build && node ./dist/bin/bouro.js audit"
   },
   "engines": {
     "node": ">=20"

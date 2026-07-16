@@ -76,7 +76,7 @@ test("receiver-owned JSON Schemas validate contract fixtures", async () => {
   assert.equal(validateContext(contextFixture), true, JSON.stringify(validateContext.errors));
   assert.equal(
     validateEvidence({
-      schema: "boros.register-evidence/v1",
+      schema: "bouro.register-evidence/v1",
       source: "ouro",
       sourceEventId: "EVT-BAD",
       evidence: { title: "bad", observation: "missing provenance", derivedFrom: [] },
@@ -148,7 +148,7 @@ test("evidence registration is idempotent and creates a provenance-backed assert
   const store = emptyStore();
   const claim = createClaim(store, { title: "Claim", statement: "Pinned inputs replay." });
   const command = {
-    schema: "boros.register-evidence/v1" as const,
+    schema: "bouro.register-evidence/v1" as const,
     source: "ouro",
     sourceEventId: "EVT-001",
     evidence: {
@@ -188,7 +188,7 @@ test("invalid Evidence assessments fail before mutating the store", () => {
   assert.throws(
     () =>
       registerEvidence(store, {
-        schema: "boros.register-evidence/v1",
+        schema: "bouro.register-evidence/v1",
         source: "ouro",
         sourceEventId: "EVT-INVALID-ASSESSMENT",
         evidence: {
@@ -197,7 +197,7 @@ test("invalid Evidence assessments fail before mutating the store", () => {
           generatedBy: { system: "ouro", type: "run", id: "RUN-1", version: "1" },
           assessments: [
             {
-              claim: { system: "boros", type: "claim", id: "CLM-404", version: "1" },
+              claim: { system: "bouro", type: "claim", id: "CLM-404", version: "1" },
               stance: "supports",
               rationale: "Invalid target",
             },
@@ -215,7 +215,7 @@ test("evidence without a source is rejected", () => {
   assert.throws(
     () =>
       registerEvidence(store, {
-        schema: "boros.register-evidence/v1",
+        schema: "bouro.register-evidence/v1",
         source: "ouro",
         sourceEventId: "EVT-EMPTY",
         evidence: { title: "Unknown", observation: "No provenance" },
@@ -243,8 +243,8 @@ test("context bundles are deterministic, pinned, time-aware, and access filtered
     sensitivity: "restricted",
   });
   const query = {
-    schema: "boros.context-query/v1" as const,
-    roots: [{ system: "boros", type: "concept", id: publicConcept.id }],
+    schema: "bouro.context-query/v1" as const,
+    roots: [{ system: "bouro", type: "concept", id: publicConcept.id }],
     purpose: "replay context",
     asOf: oldTimestamp,
     tokenBudget: 2_000,
@@ -294,7 +294,7 @@ test("context excludes future relations and matches Japanese purpose terms", asy
   relation.temporal.recordedAt = new Date(Date.now() + 60_000).toISOString();
 
   const bundle = createContextBundle(store, {
-    schema: "boros.context-query/v1",
+    schema: "bouro.context-query/v1",
     roots: [refForRevision(root)],
     purpose: "再現可能",
     asOf,
@@ -310,7 +310,7 @@ test("context query rejects invalid temporal and budget constraints", () => {
   const store = emptyStore();
   const root = createConcept(store, { title: "Root", statement: "Root" });
   const base = {
-    schema: "boros.context-query/v1" as const,
+    schema: "bouro.context-query/v1" as const,
     roots: [refForRevision(root)],
     purpose: "root",
   };
@@ -322,7 +322,7 @@ test("context query rejects invalid temporal and budget constraints", () => {
 test("terminal evidence revisions and duplicate question decisions are rejected", () => {
   const store = emptyStore();
   const { evidence } = registerEvidence(store, {
-    schema: "boros.register-evidence/v1",
+    schema: "bouro.register-evidence/v1",
     source: "ouro",
     sourceEventId: "EVT-TERMINAL",
     evidence: {
@@ -401,11 +401,11 @@ test("v1 migration isolates Run objects and incompatible execution edges", () =>
   assert.equal(migrated.legacy?.edges.length, 1);
   assert.equal(migrated.legacy?.events.length, 1);
   assert.equal(validateStore(migrated).ok, true);
-  assert.throws(() => migrateStore({}), /Unsupported Boros store schema or version/);
+  assert.throws(() => migrateStore({}), /Unsupported Bouro store schema or version/);
 });
 
 test("store can be saved and loaded without losing revisions or context digests", async () => {
-  const dir = await mkdtemp(join(tmpdir(), "boros-store-"));
+  const dir = await mkdtemp(join(tmpdir(), "bouro-store-"));
   try {
     const path = join(dir, "vault", "store.json");
     const store = emptyStore();
@@ -414,14 +414,14 @@ test("store can be saved and loaded without losing revisions or context digests"
     const loaded = await loadStore(path);
     assert.equal(validateStore(loaded).ok, true);
     assert.equal(Object.keys(loaded.revisions).length, Object.keys(store.revisions).length);
-    assert.match(await readFile(path, "utf8"), /boros\.store\/v2/);
+    assert.match(await readFile(path, "utf8"), /bouro\.store\/v2/);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
 });
 
-test("CLI demo writes a valid Boros vault", async () => {
-  const dir = await mkdtemp(join(tmpdir(), "boros-cli-"));
+test("CLI demo writes a valid Bouro vault", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "bouro-cli-"));
   const writes: string[] = [];
   try {
     await runCli(["demo"], {
@@ -439,18 +439,18 @@ test("CLI demo writes a valid Boros vault", async () => {
 });
 
 test("doctor rejects a corrupt v2 vault with a non-zero exit", async () => {
-  const dir = await mkdtemp(join(tmpdir(), "boros-doctor-"));
+  const dir = await mkdtemp(join(tmpdir(), "bouro-doctor-"));
   try {
     const path = join(dir, "store.json");
     const store = emptyStore();
     store.heads["CON-9999"] = {
-      system: "boros",
+      system: "bouro",
       type: "concept",
       id: "CON-9999",
       version: "1",
     };
     await writeFile(path, JSON.stringify(store), "utf8");
-    const bin = fileURLToPath(new URL("../bin/boros.js", import.meta.url));
+    const bin = fileURLToPath(new URL("../bin/bouro.js", import.meta.url));
     const result = spawnSync(process.execPath, [bin, "doctor", "--vault", path], {
       cwd: dir,
       encoding: "utf8",

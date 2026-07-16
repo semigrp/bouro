@@ -1,6 +1,6 @@
-# Boros
+# Bouro
 
-Boros is a local-first, ontology-backed knowledge graph and epistemic ledger for AI-agent loops.
+Bouro is a local-first, ontology-backed knowledge graph and epistemic ledger for AI-agent loops.
 It owns durable meaning, evidence, and decisions. It does not execute work or analyze execution
 telemetry.
 
@@ -10,18 +10,18 @@ telemetry.
 | --- | --- |
 | Source code, prompts, workflows, binary artifacts | Repository or artifact store |
 | Work, Plan, Task, Run, Attempt, Gate, workspace | Ouro |
-| Concept, Claim, Question, Hypothesis | Boros |
-| ExperimentDefinition and ProcedureDefinition | Boros |
-| Procedure implementation | Repository; Boros stores a pinned reference |
-| Evidence meaning, provenance, and assessed Claim | Boros |
-| Raw trace, eval result, and source material | Producing system; Boros stores a pinned reference |
+| Concept, Claim, Question, Hypothesis | Bouro |
+| ExperimentDefinition and ProcedureDefinition | Bouro |
+| Procedure implementation | Repository; Bouro stores a pinned reference |
+| Evidence meaning, provenance, and assessed Claim | Bouro |
+| Raw trace, eval result, and source material | Producing system; Bouro stores a pinned reference |
 | Execution telemetry, baseline, Finding, improvement effect | Fukuro |
 
-Ouro queries Boros for a version-pinned ContextBundle and registers Evidence using an idempotent
+Ouro queries Bouro for a version-pinned ContextBundle and registers Evidence using an idempotent
 command. Ouro exports execution telemetry to Fukuro. Fukuro may propose an improvement issue or
-explicit knowledge-promotion command, but it never changes Boros knowledge implicitly.
+explicit knowledge-promotion command, but it never changes Bouro knowledge implicitly.
 
-See [ADR 0001](docs/adr/0001-boros-boundary-and-ontology.md).
+See [ADR 0001](docs/adr/0001-bouro-boundary-and-ontology.md).
 
 ## Active ontology
 
@@ -36,7 +36,7 @@ The active knowledge kinds are:
 actor, time, and rationale. This allows multiple agents or runs to disagree without overwriting a
 single truth value.
 
-Run, routing, permission tier, retry, timeout, and workspace are not active Boros objects. The v1
+Run, routing, permission tier, retry, timeout, and workspace are not active Bouro objects. The v1
 migration isolates those records in `legacy` instead of deleting them.
 
 ## Guarantees
@@ -59,7 +59,7 @@ migration isolates those records in `legacy` instead of deleting them.
 ## Quick start
 
 ```bash
-cd /Users/semigrp/dev/boros
+cd /Users/semigrp/dev/bouro
 pnpm install
 pnpm test
 pnpm run demo
@@ -71,33 +71,33 @@ The default vault is `vault/store.json`. Override it with `--vault <path>`.
 ## CLI
 
 ```bash
-node dist/bin/boros.js ontology
-node dist/bin/boros.js concept \
+node dist/bin/bouro.js ontology
+node dist/bin/bouro.js concept \
   --title "Pinned context" \
   --statement "Version-pinned context makes an Ouro run reproducible."
-node dist/bin/boros.js context \
+node dist/bin/bouro.js context \
   --root CON-0001 \
   --purpose "prepare Ouro replay" \
   --token-budget 4000
-node dist/bin/boros.js evidence register \
+node dist/bin/bouro.js evidence register \
   --input ./register-evidence-command.json
-node dist/bin/boros.js show --id CON-0001
-node dist/bin/boros.js history --id CON-0001
-node dist/bin/boros.js audit --limit 20
+node dist/bin/bouro.js show --id CON-0001
+node dist/bin/bouro.js history --id CON-0001
+node dist/bin/bouro.js audit --limit 20
 ```
 
-Use `boros help` for all object creation and relation commands.
+Use `bouro help` for all object creation and relation commands.
 
 ## Contracts
 
-Contracts are owned by Boros as the receiver:
+Contracts are owned by Bouro as the receiver:
 
 - `contracts/resource-ref.v1.schema.json`
 - `contracts/register-evidence.v1.schema.json`
 - `contracts/context-query.v1.schema.json`
 
 Files under `contracts/fixtures` are schema-validation examples. Replace their example ResourceRefs
-with references returned by the active Boros and Ouro stores before sending them to the CLI.
+with references returned by the active Bouro and Ouro stores before sending them to the CLI.
 
 There is no integration repository, shared npm package, event broker, distributed transaction, or
 cross-database write. The only cross-system convention is the embedded `ResourceRefV1` shape.

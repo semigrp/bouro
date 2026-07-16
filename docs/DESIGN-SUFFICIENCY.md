@@ -1,6 +1,6 @@
 # Design sufficiency
 
-Target: 95/100 for the Boros design as the ontology-backed knowledge plane used by Ouro and Fukuro.
+Target: 95/100 for the Bouro design as the ontology-backed knowledge plane used by Ouro and Fukuro.
 This is a design and executable-contract score, not a claim of production scale or operational
 maturity.
 
