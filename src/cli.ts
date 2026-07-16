@@ -54,6 +54,7 @@ const COMMANDS = new Map<string, Command>([
   ["relate", relateCommand],
   ["revise", reviseCommand],
   ["context", contextCommand],
+  ["find", findCommand],
   ["show", showCommand],
   ["history", historyCommand],
   ["audit", auditCommand],
@@ -251,6 +252,23 @@ async function contextCommand(options: CommandOptions, io: CliIo): Promise<void>
   });
 }
 
+async function findCommand(options: CommandOptions, io: CliIo): Promise<void> {
+  const store = await loadStore(getVaultPath(options, io));
+  const kind = required(options.kind, "kind");
+  const title = required(options.title, "title");
+  const includeInactive = options["include-inactive"] === true;
+  const inactive = new Set(["superseded", "closed", "refuted"]);
+  for (const ref of Object.values(store.heads)) {
+    if (ref.type !== kind) continue;
+    const revision = getRevision(store, ref);
+    if (revision.title !== title) continue;
+    if (!includeInactive && inactive.has(revision.status)) continue;
+    writeJson(io, { found: true, revision });
+    return;
+  }
+  writeJson(io, { found: false, kind, title });
+}
+
 async function showCommand(options: CommandOptions, io: CliIo): Promise<void> {
   const store = await loadStore(getVaultPath(options, io));
   const id = required(options.id, "id");
@@ -316,6 +334,7 @@ function helpCommand(_options: CommandOptions, io: CliIo): void {
   relate --type <relation> --from <id> --to <id>
   revise --id <id> [--status <status>] [--attributes <json>]
   context --root <id> --purpose <text> [--as-of <iso>] [--token-budget 4000]
+  find --kind <kind> --title <exact title> [--include-inactive]
   show --id <id> [--version <n>] | history --id <id>
   demo
 

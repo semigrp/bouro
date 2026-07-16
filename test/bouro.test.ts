@@ -490,3 +490,32 @@ test("vault resolution: --vault wins, then $BOURO_VAULT, then cwd default", asyn
     await rm(dir, { recursive: true, force: true });
   }
 });
+
+test("find: exact-title hit, miss, and inactive exclusion", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "bouro-find-"));
+  const writes: string[] = [];
+  const io = { cwd: dir, stdout: { write: (v: string) => writes.push(v) }, stderr: { write: () => {} } };
+  try {
+    await runCli(["claim", "--title", "gate-clean HEAD", "--statement", "s"], io);
+    writes.length = 0;
+    await runCli(["find", "--kind", "claim", "--title", "gate-clean HEAD"], io);
+    const hit = JSON.parse(writes.join(""));
+    assert.equal(hit.found, true);
+    assert.equal(hit.revision.title, "gate-clean HEAD");
+    const id = hit.revision.id;
+
+    writes.length = 0;
+    await runCli(["find", "--kind", "claim", "--title", "no such"], io);
+    assert.equal(JSON.parse(writes.join("")).found, false);
+
+    await runCli(["revise", "--id", id, "--status", "superseded"], io);
+    writes.length = 0;
+    await runCli(["find", "--kind", "claim", "--title", "gate-clean HEAD"], io);
+    assert.equal(JSON.parse(writes.join("")).found, false);
+    writes.length = 0;
+    await runCli(["find", "--kind", "claim", "--title", "gate-clean HEAD", "--include-inactive"], io);
+    assert.equal(JSON.parse(writes.join("")).found, true);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
