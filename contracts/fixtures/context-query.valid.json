@@ -1,8 +1,8 @@
 {
-  "schema": "bouro.context-query/v1",
+  "schema": "negura.context-query/v1",
   "roots": [
     {
-      "system": "bouro",
+      "system": "negura",
       "type": "experiment",
       "id": "EXP-0001",
       "version": "2"

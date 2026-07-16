@@ -1,5 +1,5 @@
 {
-  "schema": "bouro.register-evidence/v1",
+  "schema": "negura.register-evidence/v1",
   "source": "ouro",
   "sourceEventId": "EVT-EXAMPLE-0001",
   "evidence": {
@@ -14,7 +14,7 @@
     },
     "derivedFrom": [
       {
-        "system": "bouro",
+        "system": "negura",
         "type": "context_bundle",
         "id": "CTX-EXAMPLE",
         "version": "1",

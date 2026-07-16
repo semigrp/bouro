@@ -65,7 +65,7 @@ const COMMANDS = new Map<string, Command>([
 export async function runCli(argv: string[], io: CliIo): Promise<void> {
   const commandName = argv[0] ?? "help";
   const command = COMMANDS.get(commandName);
-  if (!command) throw new Error(`Unknown command: ${commandName}\nRun bouro help.`);
+  if (!command) throw new Error(`Unknown command: ${commandName}\nRun negura help.`);
   const remaining = commandName === "evidence" && argv[1] === "register" ? argv.slice(2) : argv.slice(1);
   const parsed = parseArgs(remaining);
   if (parsed.help) return helpCommand({}, io);
@@ -238,7 +238,7 @@ async function contextCommand(options: CommandOptions, io: CliIo): Promise<void>
   await mutate(options, io, (store) => {
     const asOf = optionalString(options["as-of"]);
     const query: ContextQueryV1 = {
-      schema: "bouro.context-query/v1",
+      schema: "negura.context-query/v1",
       roots: normalizeList(options.root).map((id) => resolveRef(store, id, asOf)),
       purpose: required(options.purpose, "purpose"),
       ...(asOf ? { asOf } : {}),
@@ -280,7 +280,7 @@ async function showCommand(options: CommandOptions, io: CliIo): Promise<void> {
   }
   const revision = options.version
     ? getRevision(store, {
-        system: "bouro",
+        system: "negura",
         type: getHead(store, id).kind,
         id,
         version: String(options.version),
@@ -320,7 +320,7 @@ async function demoCommand(options: CommandOptions, io: CliIo): Promise<void> {
 }
 
 function helpCommand(_options: CommandOptions, io: CliIo): void {
-  io.stdout.write(`${basename(process.argv[1] ?? "bouro")} commands:
+  io.stdout.write(`${basename(process.argv[1] ?? "negura")} commands:
 
   init | doctor | status | ontology | audit [--limit 20]
   concept --title <text> --statement <text> [--alias <text> ...]
@@ -329,7 +329,7 @@ function helpCommand(_options: CommandOptions, io: CliIo): void {
   hypothesis --title <text> --claim <CLM-id> --question <QST-id> --closes-when <text>
   experiment --title <text> --question <QST-id> --hypothesis <HYP-id> --success <text>
   procedure --title <text> --purpose <text> [--implementation-uri <uri> --implementation-version <version>]
-  evidence register --input <bouro.register-evidence/v1.json>
+  evidence register --input <negura.register-evidence/v1.json>
   decision --title <text> --question <QST-id> --evidence <EVD-id> --outcome <text> --rationale <text>
   relate --type <relation> --from <id> --to <id>
   revise --id <id> [--status <status>] [--attributes <json>]
@@ -339,8 +339,8 @@ function helpCommand(_options: CommandOptions, io: CliIo): void {
   demo
 
 Global:
-  --vault <path>  Use a specific Bouro JSON vault. Resolution order:
-                  --vault, then $BOURO_VAULT, then <cwd>/vault/store.json.
+  --vault <path>  Use a specific Negura JSON vault. Resolution order:
+                  --vault, then $NEGURA_VAULT, then <cwd>/vault/store.json.
 `);
 }
 
@@ -408,10 +408,10 @@ function sensitivity(value: unknown): "public" | "internal" | "restricted" | und
   return parsed as "public" | "internal" | "restricted";
 }
 
-/** Vault resolution order: --vault flag, then $BOURO_VAULT, then <cwd>/vault/store.json. */
+/** Vault resolution order: --vault flag, then $NEGURA_VAULT, then <cwd>/vault/store.json. */
 function getVaultPath(options: CommandOptions, io: CliIo): string {
   if (typeof options.vault === "string") return options.vault;
-  const fromEnv = (io.env ?? process.env).BOURO_VAULT;
+  const fromEnv = (io.env ?? process.env).NEGURA_VAULT;
   if (typeof fromEnv === "string" && fromEnv.length > 0) return fromEnv;
   return defaultVaultPath(io.cwd);
 }

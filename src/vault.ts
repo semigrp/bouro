@@ -74,7 +74,7 @@ export type EvidenceAssessment = {
 };
 
 export type RegisterEvidenceCommandV1 = {
-  schema: "bouro.register-evidence/v1";
+  schema: "negura.register-evidence/v1";
   source: string;
   sourceEventId: string;
   evidence: {
@@ -107,7 +107,7 @@ export type StatusReport = {
 };
 
 const LOCAL_ACTOR: ResourceRefV1 = {
-  system: "bouro",
+  system: "negura",
   type: "actor",
   id: "local-cli",
 };
@@ -149,7 +149,7 @@ export function createKnowledge(store: Store, input: CreateKnowledgeInput): Know
   if (store.heads[id]) throw new Error(`Knowledge object already exists: ${id}`);
   const timestamp = nowIso();
   const revision: KnowledgeRevision = {
-    schema: "bouro.knowledge-revision/v1",
+    schema: "negura.knowledge-revision/v1",
     id,
     kind: input.kind,
     version: "1",
@@ -240,7 +240,7 @@ export function addRelation(
   }
   assertNoIdentityConflict(store, type, from, to);
   const relation: KnowledgeRelation = {
-    schema: "bouro.knowledge-relation/v1",
+    schema: "negura.knowledge-relation/v1",
     id: nextId(store, "REL"),
     type,
     from,
@@ -259,7 +259,7 @@ export function addRelation(
 }
 
 export function getRevision(store: Store, ref: ResourceRefV1): KnowledgeRevision {
-  if (ref.system !== "bouro") throw new Error(`Cannot resolve non-Bouro ref: ${ref.system}`);
+  if (ref.system !== "negura") throw new Error(`Cannot resolve non-Negura ref: ${ref.system}`);
   if (!ref.version) throw new Error(`Persistent knowledge reference must pin version: ${ref.id}`);
   const revision = store.revisions[revisionKey(ref.id, ref.version)];
   if (!revision) throw new Error(`Knowledge revision not found: ${ref.id}@${ref.version}`);
@@ -430,7 +430,7 @@ export function registerEvidence(
   store: Store,
   command: RegisterEvidenceCommandV1,
 ): RegisterEvidenceResult {
-  if (command.schema !== "bouro.register-evidence/v1") {
+  if (command.schema !== "negura.register-evidence/v1") {
     throw new Error(`Unsupported evidence command: ${String(command.schema)}`);
   }
   if (!command.source?.trim() || !command.sourceEventId?.trim()) {
@@ -603,7 +603,7 @@ export function makeDecision(
 }
 
 export function createContextBundle(store: Store, query: ContextQueryV1): ContextBundle {
-  if (query.schema !== "bouro.context-query/v1") throw new Error("Unsupported context query schema");
+  if (query.schema !== "negura.context-query/v1") throw new Error("Unsupported context query schema");
   if (query.roots.length === 0) throw new Error("Context query needs at least one root");
   const asOf = query.asOf;
   if (asOf && !isValidTimestamp(asOf)) throw new Error(`Invalid context asOf timestamp: ${asOf}`);
@@ -699,7 +699,7 @@ export function createContextBundle(store: Store, query: ContextQueryV1): Contex
   const existing = store.contextBundles[id];
   if (existing) return existing;
   const bundle: ContextBundle = {
-    schema: "bouro.context-bundle/v1",
+    schema: "negura.context-bundle/v1",
     id,
     createdAt: nowIso(),
     ...payload,
@@ -806,7 +806,7 @@ export function validateStore(store: Store): ValidationResult {
     if (
       revision.kind === KINDS.hypothesis &&
       ["confirmed", "refuted", "inconclusive"].includes(revision.status) &&
-      !revision.provenance.derivedFrom.some((item) => item.system === "bouro" && item.type === KINDS.decision)
+      !revision.provenance.derivedFrom.some((item) => item.system === "negura" && item.type === KINDS.decision)
     ) {
       errors.push(`${revision.id}@${revision.version} conclusion has no Decision provenance`);
     }
@@ -903,7 +903,7 @@ export function createDemo(store: Store): Record<string, KnowledgeRevision | Con
   });
   const procedure = createProcedure(store, {
     title: "Replay a pinned context",
-    purpose: "Verify that an Ouro run can reproduce its Bouro knowledge inputs.",
+    purpose: "Verify that an Ouro run can reproduce its Negura knowledge inputs.",
     inputs: ["ContextBundle"],
     outputs: ["replay report"],
     preconditions: ["all references are version pinned"],
@@ -914,7 +914,7 @@ export function createDemo(store: Store): Record<string, KnowledgeRevision | Con
       {
         system: "github",
         type: "file",
-        id: "semigrp/bouro:procedures/replay.ts",
+        id: "semigrp/negura:procedures/replay.ts",
         version: "demo-commit",
         digest: digestJson("demo procedure"),
       },
@@ -930,13 +930,13 @@ export function createDemo(store: Store): Record<string, KnowledgeRevision | Con
     procedure: refForRevision(procedure),
   });
   const bundle = createContextBundle(store, {
-    schema: "bouro.context-query/v1",
+    schema: "negura.context-query/v1",
     roots: [refForRevision(experiment)],
     purpose: "replay pinned context",
     tokenBudget: 4_000,
   });
   const registered = registerEvidence(store, {
-    schema: "bouro.register-evidence/v1",
+    schema: "negura.register-evidence/v1",
     source: "ouro",
     sourceEventId: "EVT-DEMO-0001",
     evidence: {
@@ -997,7 +997,7 @@ export function migrateStore(raw: unknown): Store {
     return raw;
   }
   if (isRecord(raw) && raw.version === 1) return migrateV1(raw);
-  throw new Error("Unsupported Bouro store schema or version");
+  throw new Error("Unsupported Negura store schema or version");
 }
 
 function migrateV1(raw: unknown): Store {
@@ -1007,7 +1007,7 @@ function migrateV1(raw: unknown): Store {
   const objects = isRecord(source.objects) ? Object.values(source.objects) : [];
   const edges = Array.isArray(source.edges) ? source.edges : [];
   const events = Array.isArray(source.events) ? source.events : [];
-  store.legacy = { migratedFrom: "bouro.store/v1", objects: [], edges: [], events: [...events] };
+  store.legacy = { migratedFrom: "negura.store/v1", objects: [], edges: [], events: [...events] };
   const legacyKinds = new Map<string, string>();
   for (const item of objects) {
     if (isRecord(item) && typeof item.id === "string" && typeof item.kind === "string") {
@@ -1037,20 +1037,20 @@ function migrateV1(raw: unknown): Store {
         continue;
       }
       migratedAttributes.question = jsonRef({
-        system: "bouro",
+        system: "negura",
         type: KINDS.question,
         id: questionId,
         version: "1",
       });
       migratedAttributes.evidence = evidenceIds.map((id) =>
-        jsonRef({ system: "bouro", type: KINDS.evidence, id, version: "1" }),
+        jsonRef({ system: "negura", type: KINDS.evidence, id, version: "1" }),
       );
     }
     if (kind === KINDS.experiment) {
       const questionId = legacyEdgeTarget(edges, rawObject.id, "tests");
       if (questionId) {
         migratedAttributes.question = jsonRef({
-          system: "bouro",
+          system: "negura",
           type: KINDS.question,
           id: questionId,
           version: "1",
@@ -1058,7 +1058,7 @@ function migrateV1(raw: unknown): Store {
       }
     }
     const revision: KnowledgeRevision = {
-      schema: "bouro.knowledge-revision/v1",
+      schema: "negura.knowledge-revision/v1",
       id: rawObject.id,
       kind,
       version: "1",
@@ -1104,7 +1104,7 @@ function migrateV1(raw: unknown): Store {
       continue;
     }
     const relation: KnowledgeRelation = {
-      schema: "bouro.knowledge-relation/v1",
+      schema: "negura.knowledge-relation/v1",
       id: nextId(store, "REL"),
       type,
       from: fromRef,
@@ -1119,7 +1119,7 @@ function migrateV1(raw: unknown): Store {
     store.relations[relation.id] = relation;
   }
   recordAudit(store, "store_migrated", ontologyRef(store.ontology), {
-    from: "bouro.store/v1",
+    from: "negura.store/v1",
     isolatedObjects: store.legacy.objects.length,
     isolatedEdges: store.legacy.edges.length,
   });
@@ -1225,7 +1225,7 @@ function assertValidRevision(revision: KnowledgeRevision): void {
 
 function collectRevisionErrors(revision: KnowledgeRevision, errors: string[]): void {
   const prefix = `${String(revision.id)}@${String(revision.version)}`;
-  if (revision.schema !== "bouro.knowledge-revision/v1") {
+  if (revision.schema !== "negura.knowledge-revision/v1") {
     errors.push(`${prefix} has invalid knowledge revision schema`);
   }
   if (typeof revision.id !== "string" || revision.id.trim() === "") {
@@ -1412,14 +1412,14 @@ function validatePersistentRef(
 ): void {
   const prefix = `${owner.id}@${owner.version}`;
   if (ref.system === "legacy") return;
-  if (ref.system === "bouro" && ref.type === "context_bundle") {
+  if (ref.system === "negura" && ref.type === "context_bundle") {
     if (!ref.version || !ref.digest) errors.push(`${prefix} has unpinned ContextBundle reference ${ref.id}`);
     const bundle = store.contextBundles[ref.id];
     if (!bundle) errors.push(`${prefix} references missing ContextBundle ${ref.id}`);
     else if (ref.digest !== bundle.digest) errors.push(`${prefix} has stale ContextBundle digest ${ref.id}`);
     return;
   }
-  if (ref.system === "bouro" && Object.values(KINDS).includes(ref.type as Kind)) {
+  if (ref.system === "negura" && Object.values(KINDS).includes(ref.type as Kind)) {
     try {
       getRevision(store, ref);
     } catch (error) {
@@ -1439,24 +1439,24 @@ function assertIngressRef(store: Store, ref: ResourceRefV1): void {
   if (ref.digest && !/^sha256:[a-fA-F0-9]{64}$/.test(ref.digest)) {
     throw new Error(`Evidence provenance contains an invalid digest: ${ref.id}`);
   }
-  if (ref.system === "bouro" && ref.type === "context_bundle") {
+  if (ref.system === "negura" && ref.type === "context_bundle") {
     if (!ref.version || !ref.digest) throw new Error(`ContextBundle reference must be pinned: ${ref.id}`);
     const bundle = store.contextBundles[ref.id];
     if (!bundle) throw new Error(`ContextBundle not found: ${ref.id}`);
     if (bundle.digest !== ref.digest) throw new Error(`ContextBundle digest mismatch: ${ref.id}`);
     return;
   }
-  if (ref.system === "bouro" && ref.type === "ontology_release") {
+  if (ref.system === "negura" && ref.type === "ontology_release") {
     if (digestJson(ref) !== digestJson(ontologyRef(store.ontology))) {
       throw new Error(`OntologyRelease reference does not match the active store: ${ref.id}`);
     }
     return;
   }
-  if (ref.system === "bouro" && Object.values(KINDS).includes(ref.type as Kind)) {
+  if (ref.system === "negura" && Object.values(KINDS).includes(ref.type as Kind)) {
     getRevision(store, requirePinned(ref));
     return;
   }
-  if (ref.system === "bouro") throw new Error(`Unknown Bouro resource type: ${ref.type}`);
+  if (ref.system === "negura") throw new Error(`Unknown Negura resource type: ${ref.type}`);
   if (ref.type !== "actor" && !ref.version && !ref.digest) {
     throw new Error(`External persistent reference must pin version or digest: ${ref.id}`);
   }
@@ -1504,12 +1504,12 @@ function recordAudit(store: Store, type: string, subject: ResourceRefV1, data: A
 }
 
 function relationRef(relation: KnowledgeRelation): ResourceRefV1 {
-  return { system: "bouro", type: "knowledge_relation", id: relation.id, version: "1" };
+  return { system: "negura", type: "knowledge_relation", id: relation.id, version: "1" };
 }
 
 function contextRef(bundle: ContextBundle): ResourceRefV1 {
   return {
-    system: "bouro",
+    system: "negura",
     type: "context_bundle",
     id: bundle.id,
     version: "1",

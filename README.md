@@ -1,6 +1,6 @@
-# Bouro
+# Negura
 
-Bouro is a local-first, ontology-backed knowledge graph and epistemic ledger for AI-agent loops.
+Negura is a local-first, ontology-backed knowledge graph and epistemic ledger for AI-agent loops.
 It owns durable meaning, evidence, and decisions. It does not execute work or analyze execution
 telemetry.
 
@@ -10,18 +10,18 @@ telemetry.
 | --- | --- |
 | Source code, prompts, workflows, binary artifacts | Repository or artifact store |
 | Work, Plan, Task, Run, Attempt, Gate, workspace | Ouro |
-| Concept, Claim, Question, Hypothesis | Bouro |
-| ExperimentDefinition and ProcedureDefinition | Bouro |
-| Procedure implementation | Repository; Bouro stores a pinned reference |
-| Evidence meaning, provenance, and assessed Claim | Bouro |
-| Raw trace, eval result, and source material | Producing system; Bouro stores a pinned reference |
+| Concept, Claim, Question, Hypothesis | Negura |
+| ExperimentDefinition and ProcedureDefinition | Negura |
+| Procedure implementation | Repository; Negura stores a pinned reference |
+| Evidence meaning, provenance, and assessed Claim | Negura |
+| Raw trace, eval result, and source material | Producing system; Negura stores a pinned reference |
 | Execution telemetry, baseline, Finding, improvement effect | Fukuro |
 
-Ouro queries Bouro for a version-pinned ContextBundle and registers Evidence using an idempotent
+Ouro queries Negura for a version-pinned ContextBundle and registers Evidence using an idempotent
 command. Ouro exports execution telemetry to Fukuro. Fukuro may propose an improvement issue or
-explicit knowledge-promotion command, but it never changes Bouro knowledge implicitly.
+explicit knowledge-promotion command, but it never changes Negura knowledge implicitly.
 
-See [ADR 0001](docs/adr/0001-bouro-boundary-and-ontology.md).
+See [ADR 0001](docs/adr/0001-negura-boundary-and-ontology.md).
 
 ## Active ontology
 
@@ -36,7 +36,7 @@ The active knowledge kinds are:
 actor, time, and rationale. This allows multiple agents or runs to disagree without overwriting a
 single truth value.
 
-Run, routing, permission tier, retry, timeout, and workspace are not active Bouro objects. The v1
+Run, routing, permission tier, retry, timeout, and workspace are not active Negura objects. The v1
 migration isolates those records in `legacy` instead of deleting them.
 
 ## Guarantees
@@ -65,46 +65,46 @@ the portable conversation-to-vault distillation regime.
 ## Quick start
 
 ```bash
-git clone https://github.com/semigrp/bouro && cd bouro
+git clone https://github.com/semigrp/negura && cd negura
 pnpm install
 pnpm test
 pnpm run demo
 pnpm run doctor
 ```
 
-Vault resolution order: `--vault <path>`, then `$BOURO_VAULT`, then `vault/store.json` relative to
-the working directory. Set `BOURO_VAULT` in your shell to use one personal vault from anywhere.
+Vault resolution order: `--vault <path>`, then `$NEGURA_VAULT`, then `vault/store.json` relative to
+the working directory. Set `NEGURA_VAULT` in your shell to use one personal vault from anywhere.
 
 ## CLI
 
 ```bash
-node dist/bin/bouro.js ontology
-node dist/bin/bouro.js concept \
+node dist/bin/negura.js ontology
+node dist/bin/negura.js concept \
   --title "Pinned context" \
   --statement "Version-pinned context makes an Ouro run reproducible."
-node dist/bin/bouro.js context \
+node dist/bin/negura.js context \
   --root CON-0001 \
   --purpose "prepare Ouro replay" \
   --token-budget 4000
-node dist/bin/bouro.js evidence register \
+node dist/bin/negura.js evidence register \
   --input ./register-evidence-command.json
-node dist/bin/bouro.js show --id CON-0001
-node dist/bin/bouro.js history --id CON-0001
-node dist/bin/bouro.js audit --limit 20
+node dist/bin/negura.js show --id CON-0001
+node dist/bin/negura.js history --id CON-0001
+node dist/bin/negura.js audit --limit 20
 ```
 
-Use `bouro help` for all object creation and relation commands.
+Use `negura help` for all object creation and relation commands.
 
 ## Contracts
 
-Contracts are owned by Bouro as the receiver:
+Contracts are owned by Negura as the receiver:
 
 - `contracts/resource-ref.v1.schema.json`
 - `contracts/register-evidence.v1.schema.json`
 - `contracts/context-query.v1.schema.json`
 
 Files under `contracts/fixtures` are schema-validation examples. Replace their example ResourceRefs
-with references returned by the active Bouro and Ouro stores before sending them to the CLI.
+with references returned by the active Negura and Ouro stores before sending them to the CLI.
 
 There is no integration repository, shared npm package, event broker, distributed transaction, or
 cross-database write. The only cross-system convention is the embedded `ResourceRefV1` shape.

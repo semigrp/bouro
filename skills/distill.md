@@ -1,7 +1,7 @@
 # skill: distill — turn conversations into vault knowledge
 
 A portable, harness-agnostic regime for extracting epistemic units from an AI-agent session and
-registering them in a Bouro vault. Copy this file into your harness's skill directory (or
+registering them in a Negura vault. Copy this file into your harness's skill directory (or
 equivalent) and adapt the trigger wording; the procedure itself has no harness dependencies.
 
 ## When to fire
@@ -34,7 +34,7 @@ produces noise. (The measurement sibling documents the same rule as "what not to
    ```bash
    python3 - <<'PY' | grep -i "<keyword>"
    import json, os
-   s = json.load(open(os.environ["BOURO_VAULT"]))
+   s = json.load(open(os.environ["NEGURA_VAULT"]))
    for hid, ref in s["heads"].items():
        if ref.get("type") in ("claim", "question"):
            rev = s["revisions"].get(f'{hid}@{ref.get("version", "1")}', {})
@@ -44,22 +44,22 @@ produces noise. (The measurement sibling documents the same rule as "what not to
    ```
 
 3. **Equivalent exists** → do not create; update the existing statement's occurrence note:
-   `bouro revise --id CLM-n --attributes '{"statement":"<same principle, occurrence count and source appended>"}'`
-4. **Principle evolved** → new Claim → `bouro relate --type revises --from CLM-new --to CLM-old`
-   → `bouro revise --id CLM-old --status superseded`.
+   `negura revise --id CLM-n --attributes '{"statement":"<same principle, occurrence count and source appended>"}'`
+4. **Principle evolved** → new Claim → `negura relate --type revises --from CLM-new --to CLM-old`
+   → `negura revise --id CLM-old --status superseded`.
 5. **New** →
 
    ```bash
-   bouro claim --title "<short name>" \
+   negura claim --title "<short name>" \
      --statement "<one sentence; append occurrence count and session/source pointer>" \
      --concept <your operating-principles CON-id>
-   bouro question --title "<name>" --question "<one sentence>" \
+   negura question --title "<name>" --question "<one sentence>" \
      --closure-rule "<what closes it>" --concept <CON-id>
    ```
 
-6. **Measure** (if Fukuro is installed): `fukuro log-event concept_captured --data '{"bouro_id":"CLM-n","title":"..."}'`
-7. **Close Questions** when their closure rule fires: `bouro revise --id QST-n --status closed`.
-8. **Verify**: `bouro doctor` must stay `ok: true, errors: []`.
+6. **Measure** (if Fukuro is installed): `fukuro log-event concept_captured --data '{"negura_id":"CLM-n","title":"..."}'`
+7. **Close Questions** when their closure rule fires: `negura revise --id QST-n --status closed`.
+8. **Verify**: `negura doctor` must stay `ok: true, errors: []`.
 
 ## Quality bar
 
