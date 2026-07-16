@@ -465,3 +465,28 @@ test("doctor rejects a corrupt v2 vault with a non-zero exit", async () => {
 function delay(milliseconds: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
+
+test("vault resolution: --vault wins, then $BOURO_VAULT, then cwd default", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "bouro-env-"));
+  try {
+    const envVault = join(dir, "personal", "store.json");
+    const io = (env?: Record<string, string | undefined>) => ({
+      cwd: dir,
+      stdout: { write: () => {} },
+      stderr: { write: () => {} },
+      env,
+    });
+    // env var applies when --vault is absent
+    await runCli(["demo"], io({ BOURO_VAULT: envVault }));
+    assert.equal(validateStore(await loadStore(envVault)).ok, true);
+    // --vault beats the env var
+    const flagVault = join(dir, "flagged", "store.json");
+    await runCli(["demo", "--vault", flagVault], io({ BOURO_VAULT: envVault }));
+    assert.equal(validateStore(await loadStore(flagVault)).ok, true);
+    // empty env value falls back to the cwd default
+    await runCli(["demo"], io({ BOURO_VAULT: "" }));
+    assert.equal(validateStore(await loadStore(join(dir, "vault", "store.json"))).ok, true);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});

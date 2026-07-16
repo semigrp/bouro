@@ -66,7 +66,8 @@ pnpm run demo
 pnpm run doctor
 ```
 
-The default vault is `vault/store.json`. Override it with `--vault <path>`.
+Vault resolution order: `--vault <path>`, then `$BOURO_VAULT`, then `vault/store.json` relative to
+the working directory. Set `BOURO_VAULT` in your shell to use one personal vault from anywhere.
 
 ## CLI
 

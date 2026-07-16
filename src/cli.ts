@@ -32,6 +32,8 @@ export type CliIo = {
   cwd: string;
   stdout: Writer;
   stderr: Writer;
+  /** Environment for vault resolution; defaults to process.env at the entry point. */
+  env?: Record<string, string | undefined>;
 };
 
 type Command = (options: CommandOptions, io: CliIo) => Promise<void> | void;
@@ -318,7 +320,8 @@ function helpCommand(_options: CommandOptions, io: CliIo): void {
   demo
 
 Global:
-  --vault <path>  Use a specific Bouro JSON vault.
+  --vault <path>  Use a specific Bouro JSON vault. Resolution order:
+                  --vault, then $BOURO_VAULT, then <cwd>/vault/store.json.
 `);
 }
 
@@ -386,8 +389,12 @@ function sensitivity(value: unknown): "public" | "internal" | "restricted" | und
   return parsed as "public" | "internal" | "restricted";
 }
 
+/** Vault resolution order: --vault flag, then $BOURO_VAULT, then <cwd>/vault/store.json. */
 function getVaultPath(options: CommandOptions, io: CliIo): string {
-  return typeof options.vault === "string" ? options.vault : defaultVaultPath(io.cwd);
+  if (typeof options.vault === "string") return options.vault;
+  const fromEnv = (io.env ?? process.env).BOURO_VAULT;
+  if (typeof fromEnv === "string" && fromEnv.length > 0) return fromEnv;
+  return defaultVaultPath(io.cwd);
 }
 
 function required(value: unknown, name: string): string {
