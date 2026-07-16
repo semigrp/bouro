@@ -56,10 +56,16 @@ migration isolates those records in `legacy` instead of deleting them.
   an empty legacy store.
 - `doctor` returns non-zero for structural, provenance, reference, or digest violations.
 
+## Agents
+
+AI agents (and new machines) can reach the operational level from this repository alone: see
+[AGENTS.md](AGENTS.md) for setup and conventions, and [skills/distill.md](skills/distill.md) for
+the portable conversation-to-vault distillation regime.
+
 ## Quick start
 
 ```bash
-cd /Users/semigrp/dev/bouro
+git clone https://github.com/semigrp/bouro && cd bouro
 pnpm install
 pnpm test
 pnpm run demo
