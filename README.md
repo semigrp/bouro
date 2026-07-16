@@ -1,139 +1,111 @@
-# Negura
+# subako（巣箱）
 
-Negura is a local-first, ontology-backed knowledge graph and epistemic ledger for AI-agent loops.
-It owns durable meaning, evidence, and decisions. It does not execute work or analyze execution
-telemetry.
+> A nest box is not a nest. You hang an empty box; **the bird builds its own nest inside.**
+> subako is a meta-system for growing your own ontology — it ships the box
+> (a T-box contract, a type-genesis protocol, schema-driven tools) and never the nest
+> (your types, your instances, your meanings).
 
-## System boundary
+Two predecessors of this repository shipped finished ontologies — a nine-type epistemic
+schema with versioned releases — and both starved: most types were never written to, the
+store was never read, and nobody noticed when it silently became unreachable. Meanwhile a
+living ontology next door grew from three types to four in a week, each type born from
+observed events and adjudicated by a human. The conclusion is this repository's thesis:
 
-| Concern | Source of truth |
-| --- | --- |
-| Source code, prompts, workflows, binary artifacts | Repository or artifact store |
-| Work, Plan, Task, Run, Attempt, Gate, workspace | Ouro |
-| Concept, Claim, Question, Hypothesis | Negura |
-| ExperimentDefinition and ProcedureDefinition | Negura |
-| Procedure implementation | Repository; Negura stores a pinned reference |
-| Evidence meaning, provenance, and assessed Claim | Negura |
-| Raw trace, eval result, and source material | Producing system; Negura stores a pinned reference |
-| Execution telemetry, baseline, Finding, improvement effect | Fukuro |
+**You cannot ship an ontology. You can only ship the process that grows one.**
 
-Ouro queries Negura for a version-pinned ContextBundle and registers Evidence using an idempotent
-command. Ouro exports execution telemetry to Fukuro. Fukuro may propose an improvement issue or
-explicit knowledge-promotion command, but it never changes Negura knowledge implicitly.
+## The laws
 
-See [ADR 0001](docs/adr/0001-negura-boundary-and-ontology.md).
+1. **Verbs first, nouns later.** A type may exist only when its corresponding verbs
+   (event kinds) recur in your stream. `subako init` therefore scaffolds **zero types**.
+2. **Humans adjudicate; machines write.** Types are proposed by `subako genesis` from
+   uncovered recurring verbs; instances are derived by `subako sync` or proposed by
+   producers (e.g. [junro](https://github.com/semigrp/junro)). Adjudication is a file
+   move: `_schema/proposed/<type>.md` → `_schema/<type>.md`. You never author from scratch.
+3. **The store is a product of the system, never the product we ship.** Instance content
+   (often confidential) lives in your own directory (`$SUBAKO`), outside this repository.
+4. **Types are pruned when their verbs go silent.** `genesis` also proposes retirements
+   (`--silence 90`). An ontology metabolizes; it does not only grow.
+5. **The system carries its own falsification.** `pack` logs every injection to
+   `_telemetry/injections.jsonl`. If injected slices never change a decision, your
+   ontology is dead weight — prune it, or delete subako.
 
-## Active ontology
+## The mechanism
 
-The active knowledge kinds are:
+```
+your verbs (fukuro.db) ──▶ subako genesis ──▶ _schema/proposed/<type>.md
+                                                   │  (you move the file = adjudication)
+                                                   ▼
+                          subako sync  ──▶ <type>/<instance>.md   (derived, re-derivable)
+                          subako lint  ──▶ verbless types = error; unnamed verbs = warn
+                          subako pack  ──▶ session-start injection slice (+ telemetry)
+```
 
-- Concept, Claim, Question, Hypothesis
-- ExperimentDefinition and ProcedureDefinition
-- Evidence and Assertion
-- Decision
+### T-box contract (`_schema/<type>.md`)
 
-`Claim` is a proposition. `Assertion` is a situated assessment of that Claim: stance, Evidence,
-actor, time, and rationale. This allows multiple agents or runs to disagree without overwriting a
-single truth value.
+```markdown
+---
+type: schema
+defines: hypothesis
+verbs: hypothesis_opened, hypothesis_closed     # the reason this type may exist
+derive: lifecycle        # ledger | lifecycle | registry | none
+id-source: data.id       # where instance identity comes from
+open-verbs: hypothesis_opened
+close-verbs: hypothesis_closed
+inject-when: status=open # pack condition (frontmatter k=v)
+required: status         # lint-enforced instance keys
+---
+# hypothesis
+（人間向けの型の意味・裁定基準）
+```
 
-Run, routing, permission tier, retry, timeout, and workspace are not active Negura objects. The v1
-migration isolates those records in `legacy` instead of deleting them.
+Derivation archetypes, chosen from what actually survived in practice:
+`ledger` (one instance per subject, counts + first/last), `lifecycle` (status from
+open/close verb pairs), `registry` (hand-adjudicated instances, machine-counted `hits:`),
+`none` (instances arrive from external producers; subako only lints and injects).
+Full spec: [docs/SCHEMA-CONTRACT.md](docs/SCHEMA-CONTRACT.md).
 
-## Guarantees
+`sync` is non-destructive: it creates missing instance files and updates only derived
+frontmatter keys — your adjudication notes in the body are never touched.
 
-- Every knowledge update creates an immutable revision and advances a separate head.
-- Persistent references pin a logical version; artifact references may also pin a SHA-256 digest.
-- The ontology release has its own version and shape digest, separate from object revisions.
-- Object and relation shapes enforce allowed statuses, required fields, and edge directions.
-- Evidence requires `generatedBy` or `derivedFrom` provenance.
-- Decisions require Evidence.
-- Knowledge records separate recorded time from observed/valid time.
-- ContextBundle selection is deterministic, version-pinned, time-aware, token-bounded, and filtered
-  by sensitivity.
-- Evidence registration is idempotent by `(source, sourceEventId)` and rejects a conflicting replay
-  payload for the same key.
-- Store replacement is atomic, and unknown store formats are rejected instead of being treated as
-  an empty legacy store.
-- `doctor` returns non-zero for structural, provenance, reference, or digest violations.
+## Division of labor
 
-## Agents
+| Concern | Lives in |
+|---|---|
+| Verbs (events) | [fukuro](https://github.com/semigrp/fukuro) (`$FUKURO_DB`) |
+| Human corrections → norm instances | [junro](https://github.com/semigrp/junro) (a producer) |
+| Enforcement of grown norms | [ouro](https://github.com/semigrp/ouro) / your hooks |
+| The nest (types + instances) | **your directory** (`$SUBAKO`) — never this repo |
+| The box (contract, genesis, lint, sync, pack) | subako |
 
-AI agents (and new machines) can reach the operational level from this repository alone: see
-[AGENTS.md](AGENTS.md) for setup and conventions, and [skills/distill.md](skills/distill.md) for
-the portable conversation-to-vault distillation regime.
+## What subako is not
+
+- **Not a knowledge base or RAG.** It stores nothing of yours and retrieves by injection
+  rules you adjudicated, not by similarity.
+- **Not a universal schema.** There are no built-in types. Two users of the same box grow
+  different nests, because their verbs differ.
+- **Not a writing tool.** If you find yourself authoring entities by hand, the write path
+  is wrong — fix the producer, don't type harder.
 
 ## Quick start
 
-```bash
-git clone https://github.com/semigrp/negura && cd negura
-pnpm install
-pnpm test
-pnpm run demo
-pnpm run doctor
+```sh
+subako init ~/my-nest            # empty box (zero types, by law)
+export SUBAKO=~/my-nest
+subako genesis                   # verbs -> type proposals（「反復」の定義は --threshold、既定3回）
+mv ~/my-nest/_schema/proposed/loop.md ~/my-nest/_schema/loop.md    # adjudicate
+subako sync && subako lint && subako pack
 ```
 
-Vault resolution order: `--vault <path>`, then `$NEGURA_VAULT`, then `vault/store.json` relative to
-the working directory. Set `NEGURA_VAULT` in your shell to use one personal vault from anywhere.
+Zero dependencies, Node ≥ 24 (direct TypeScript execution).
 
-## CLI
+## Status
 
-```bash
-node dist/bin/negura.js ontology
-node dist/bin/negura.js concept \
-  --title "Pinned context" \
-  --statement "Version-pinned context makes an Ouro run reproducible."
-node dist/bin/negura.js context \
-  --root CON-0001 \
-  --purpose "prepare Ouro replay" \
-  --token-budget 4000
-node dist/bin/negura.js evidence register \
-  --input ./register-evidence-command.json
-node dist/bin/negura.js show --id CON-0001
-node dist/bin/negura.js history --id CON-0001
-node dist/bin/negura.js audit --limit 20
-```
-
-Use `negura help` for all object creation and relation commands.
-
-## Contracts
-
-Contracts are owned by Negura as the receiver:
-
-- `contracts/resource-ref.v1.schema.json`
-- `contracts/register-evidence.v1.schema.json`
-- `contracts/context-query.v1.schema.json`
-
-Files under `contracts/fixtures` are schema-validation examples. Replace their example ResourceRefs
-with references returned by the active Negura and Ouro stores before sending them to the CLI.
-
-There is no integration repository, shared npm package, event broker, distributed transaction, or
-cross-database write. The only cross-system convention is the embedded `ResourceRefV1` shape.
-
-## Storage
-
-The JSON vault stores immutable knowledge revisions, version-pinned relations, ContextBundles,
-idempotency keys, and a knowledge-mutation audit log. Writes use a same-directory temporary file
-and atomic rename. It does not store raw traces, Ouro execution state, Fukuro metrics, or repository
-contents.
-
-The storage API is intentionally isolated from the ontology model. JSON is the initial local-first
-backend; a graph database is not required by the current query and scale requirements.
-
-## Validation
-
-```bash
-pnpm test
-pnpm run doctor
-```
-
-The acceptance suite covers ontology release integrity, immutable revision history, relation
-shapes, Evidence provenance and idempotency, Assertion creation, deterministic historical context,
-sensitivity filtering, identity conflicts, v1 legacy isolation, persistence, and corrupt-vault
-rejection.
-
-The design sufficiency rubric and remaining non-blocking work are documented in
-[DESIGN-SUFFICIENCY.md](docs/DESIGN-SUFFICIENCY.md).
+v0.3 — the second refounding of this repository, and the one that finally obeys its own
+family's principle («structures survive only where their write path is automatic»).
+The mechanism is extracted from a living instance that grew 3 → 4 types verb-first in one
+week of measured practice. History of the failures is preserved in
+[docs/adr/](docs/adr/) — including this repository's own two deaths.
 
 ## License
 
-Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE).
+[Apache-2.0](LICENSE)
