@@ -40,6 +40,16 @@ ins.run(now, 'hypothesis_opened', 'loop-a', JSON.stringify({ id: 'H_3' }));
 ins.run(now, 'hypothesis_opened', 'loop-a', JSON.stringify({ id: 'C-1' }));
 ins.run(now, 'hypothesis_opened', 'loop-b', JSON.stringify({ id: 'C-1' }));
 ins.run(now, 'hypothesis_closed', 'loop-b', JSON.stringify({ id: 'C-1' }));
+// verdict-bearing close verbs (issue #4): confirmed/refuted must not collapse into 'closed'.
+// Kept below the genesis threshold (3) each so they don't spawn their own proposals.
+ins.run(now, 'hypothesis_opened', 'loop-a', JSON.stringify({ id: 'H-4' }));
+ins.run(now, 'hypothesis_confirmed', 'loop-a', JSON.stringify({ id: 'H-4' }));
+ins.run(now, 'hypothesis_opened', 'loop-a', JSON.stringify({ id: 'H-5' }));
+ins.run(now, 'hypothesis_refuted', 'loop-a', JSON.stringify({ id: 'H-5' }));
+// last close verb (by event order) wins when an id has more than one.
+ins.run(now, 'hypothesis_opened', 'loop-a', JSON.stringify({ id: 'H-6' }));
+ins.run('2026-07-01T00:00:01.000Z', 'hypothesis_confirmed', 'loop-a', JSON.stringify({ id: 'H-6' }));
+ins.run('2026-07-01T00:00:02.000Z', 'hypothesis_refuted', 'loop-a', JSON.stringify({ id: 'H-6' }));
 db.close();
 
 const nest = join(TMP, 'nest');
@@ -68,6 +78,15 @@ assert.match(r.out, /proposal 裁定待ち/, 'pending proposals must be surfaced
 
 // --- adjudication is a file move ---
 renameSync(join(nest, '_schema', 'proposed', 'hypothesis.md'), join(nest, '_schema', 'hypothesis.md'));
+// adjudicator also opts the type into verdict-bearing close verbs (issue #4):
+// bare 'hypothesis_closed' keeps closing to 'closed'; the mapped ones carry a verdict.
+{
+  const hypSchemaPath = join(nest, '_schema', 'hypothesis.md');
+  let hypSchema = readFileSync(hypSchemaPath, 'utf8')
+    .replace(/^verbs: .*$/m, 'verbs: hypothesis_opened, hypothesis_closed, hypothesis_confirmed, hypothesis_refuted')
+    .replace(/^close-verbs: .*$/m, 'close-verbs: hypothesis_closed, hypothesis_confirmed=confirmed, hypothesis_refuted=refuted');
+  writeFileSync(hypSchemaPath, hypSchema);
+}
 
 // --- sync: lifecycle instances derived with status ---
 r = run(['sync']);
@@ -75,6 +94,16 @@ assert.ok(existsSync(join(nest, 'hypothesis', 'h-1.md')) && existsSync(join(nest
 const h1 = readFileSync(join(nest, 'hypothesis', 'h-1.md'), 'utf8');
 const h2 = readFileSync(join(nest, 'hypothesis', 'h-2.md'), 'utf8');
 assert.match(h1, /status: open/); assert.match(h2, /status: closed/);
+
+// --- verdict-bearing close verbs (issue #4): mapped close verbs carry their own
+// status instead of collapsing into 'closed'; bare close verbs are unaffected. ---
+const h4 = readFileSync(join(nest, 'hypothesis', 'h-4.md'), 'utf8');
+const h5 = readFileSync(join(nest, 'hypothesis', 'h-5.md'), 'utf8');
+assert.match(h4, /status: confirmed/, 'hypothesis_confirmed must map to status: confirmed');
+assert.match(h5, /status: refuted/, 'hypothesis_refuted must map to status: refuted');
+// multiple close-verb events on one id: the one that happened last decides status.
+const h6 = readFileSync(join(nest, 'hypothesis', 'h-6.md'), 'utf8');
+assert.match(h6, /status: refuted/, 'last close event (refuted, later ts) must win over the earlier confirmed');
 
 // --- human annotation survives re-sync; body lines that LOOK like derived keys are inviolable ---
 writeFileSync(join(nest, 'hypothesis', 'h-1.md'), h1 + '\n**裁定メモ**: これは残す。\nstatus: この行は本文であり機械が触ってはならない\n');

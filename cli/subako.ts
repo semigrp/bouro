@@ -228,6 +228,18 @@ function slugIdsFor(groups: IdentityGroup[]): Map<string, string> {
   }
   return slugIds;
 }
+// close-verbs entries may carry a verdict: `verb=status` maps that verb's close
+// to a custom status value (e.g. hypothesis_confirmed=confirmed) instead of the
+// bare 'closed'. Entries without '=' keep the traditional 'closed'; both forms
+// may mix in the same list.
+function closeVerbStatuses(raw?: string): Map<string, string> {
+  const m = new Map<string, string>();
+  for (const entry of csv(raw)) {
+    const eq = entry.indexOf('=');
+    m.set(eq >= 0 ? entry.slice(0, eq).trim() : entry, eq >= 0 ? entry.slice(eq + 1).trim() : 'closed');
+  }
+  return m;
+}
 const escRe = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 function upsertDerived(path: string, type: string, title: string, derived: Record<string, string | number>): void {
   if (!existsSync(path)) {
@@ -270,15 +282,15 @@ function cmdSync(): void {
         touched++;
       }
     } else if (s.fm.derive === 'lifecycle') {
-      const opens = new Set(csv(s.fm['open-verbs'])); const closes = new Set(csv(s.fm['close-verbs']));
+      const opens = new Set(csv(s.fm['open-verbs'])); const closeStatus = closeVerbStatuses(s.fm['close-verbs']);
       const groups = groupByIdentity(mine, s.fm['id-source'] ?? 'data.id');
       const slugIds = slugIdsFor(groups);
       mkdirSync(join(dir, type), { recursive: true });
       for (const g of groups) {
         const es = g.events;
-        const last = [...es].reverse().find((e) => opens.has(e.kind) || closes.has(e.kind));
+        const last = [...es].reverse().find((e) => opens.has(e.kind) || closeStatus.has(e.kind));
         upsertDerived(instancePath(dir, type, g.id, slugIds.get(g.key)), type, g.id,
-          { id: g.id, status: last && closes.has(last.kind) ? 'closed' : 'open', events: es.length, 'last-event': es[es.length - 1].ts });
+          { id: g.id, status: last && closeStatus.has(last.kind) ? closeStatus.get(last.kind)! : 'open', events: es.length, 'last-event': es[es.length - 1].ts });
         touched++;
       }
     } else if (s.fm.derive === 'registry') {

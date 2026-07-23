@@ -14,7 +14,7 @@ A subako instance (a *nest*, `$SUBAKO`) is a directory of markdown. Types live i
 | `born-of` | ✓* | for reference-born types only: the producing mechanism (e.g. `about-edges`) instead of verbs. *One of `verbs`/`born-of` is required; lint fails when both are absent |
 | `derive` | ✓ | `ledger` \| `lifecycle` \| `registry` \| `none` |
 | `id-source` | ledger/lifecycle | `loop_id` or a `data.*` path — instance identity |
-| `open-verbs` / `close-verbs` | lifecycle | comma-separated kinds driving `status: open/closed` |
+| `open-verbs` / `close-verbs` | lifecycle | comma-separated kinds driving `status: open/closed` (close-verbs may map `verb=status` for a verdict) |
 | `match-field` | registry | `data.*` field matched against instance slug / `aliases:` / title |
 | `inject-when` | | comma-separated `key=value` over instance frontmatter; matching instances enter the pack |
 | `required` | | comma-separated instance frontmatter keys enforced by lint |
@@ -40,6 +40,14 @@ rewritten before the file is moved out of `_schema/proposed/`.
 - `genesis --threshold N`（既定 3）: 法則1の「反復（recur）」の定量定義。この回数未満の動詞は型候補にならない。
 - `genesis --silence D`（既定 90）: 法則4の「沈黙」の定量定義。この日数イベントのない型は剪定候補。
 - `pack --limit C`（既定 2500 字）: 注入スライスの上限。超過時は `全 N 実体中の先頭のみ表示` と明示して切り詰める。
+
+## Verdict-bearing close-verbs
+
+A `close-verbs` entry may carry a verdict: `verb=status` maps that verb to a
+status value other than `closed` (e.g. `hypothesis_confirmed=confirmed,
+hypothesis_refuted=refuted`). Bare entries — no `=` — keep the traditional
+`closed`; both forms may mix in the same list. When an id has more than one
+close event, the one that occurred last decides `status`.
 
 ## Non-destructive sync
 
