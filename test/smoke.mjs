@@ -35,6 +35,11 @@ ins.run(now, null, 'loop-a', '{}'); // NULL kind row must not crash anything
 ins.run(now, 'hypothesis_opened', 'loop-a', JSON.stringify({ id: 42 })); // numeric id
 ins.run(now, 'hypothesis_opened', 'loop-a', JSON.stringify({ id: 'H 3' }));  // both slugify to 'h-3'
 ins.run(now, 'hypothesis_opened', 'loop-a', JSON.stringify({ id: 'H_3' }));
+// same id in two different loops must NOT fuse into one entity (composite identity);
+// use a fresh id (C-1) so the pre-existing h-1/h-2 bare-slug assertions stay untouched.
+ins.run(now, 'hypothesis_opened', 'loop-a', JSON.stringify({ id: 'C-1' }));
+ins.run(now, 'hypothesis_opened', 'loop-b', JSON.stringify({ id: 'C-1' }));
+ins.run(now, 'hypothesis_closed', 'loop-b', JSON.stringify({ id: 'C-1' }));
 db.close();
 
 const nest = join(TMP, 'nest');
@@ -81,6 +86,21 @@ assert.match(h1b, /status: この行は本文であり機械が触ってはな�
 assert.ok(existsSync(join(nest, 'hypothesis', '42.md')), 'numeric id must derive');
 const h3s = readdirSync(join(nest, 'hypothesis')).filter((f) => f.startsWith('h-3'));
 assert.strictEqual(h3s.length, 2, `slug collision must yield two files, got ${h3s}`);
+
+// --- composite identity: same id (C-1) in two different loops must not fuse into one
+// entity. Identity is scoped by owning loop, so each gets a loop-prefixed slug — the
+// bare id slug is reserved for ids unique across the whole store (backward-compat: h-1,
+// h-2, 42, h-3* above stay bare, proving non-colliding cases are unchanged). ---
+assert.ok(!existsSync(join(nest, 'hypothesis', 'c-1.md')), 'colliding id must not get a bare slug');
+assert.ok(existsSync(join(nest, 'hypothesis', 'loop-a-c-1.md')), 'loop-a side of the collision must be loop-prefixed');
+assert.ok(existsSync(join(nest, 'hypothesis', 'loop-b-c-1.md')), 'loop-b side of the collision must be loop-prefixed');
+const cA = readFileSync(join(nest, 'hypothesis', 'loop-a-c-1.md'), 'utf8');
+const cB = readFileSync(join(nest, 'hypothesis', 'loop-b-c-1.md'), 'utf8');
+assert.match(cA, /id: C-1/); assert.match(cB, /id: C-1/);
+assert.match(cA, /status: open/, 'loop-a C-1 has only an opened event');
+assert.match(cB, /status: closed/, 'loop-b C-1 has an opened+closed pair — content must not mix across loops');
+assert.match(cA, /events: 1/, 'loop-a C-1 must not absorb loop-b events');
+assert.match(cB, /events: 2/, 'loop-b C-1 must not absorb loop-a events');
 
 // --- pack: inject-when status=open picks h-1 only; telemetry appended ---
 r = run(['pack']);

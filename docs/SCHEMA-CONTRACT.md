@@ -46,10 +46,14 @@ rewritten before the file is moved out of `_schema/proposed/`.
 `sync` creates missing instance files with a minimal frontmatter + a one-line body, and
 thereafter rewrites **only the frontmatter block**, and within it only the derived keys.
 Body text — even lines that look like `status: ...` — and human-added frontmatter keys are
-never rewritten. Instance identity is the derived `id:` key; when two different ids
-collapse to one slug, the newcomer gets a `-<hash6>` filename suffix instead of silently
-merging. If a derived value disagrees with
-reality, fix the event stream (backfill), not the file.
+never rewritten. Instance identity is scoped by owning loop: the composite key is
+`(loop_id, id)`, so the same id in two different loops never fuses into one entity. The
+slug (filename) stays the bare id when that id is unique across the whole store; only
+when the same id collides across loops do the colliding entities get a loop-prefixed slug
+(`<loop>-<id>.md`) instead. Separately, when two different ids still collapse to one slug
+after slugifying, the newcomer gets a `-<hash6>` filename suffix instead of silently
+merging. If a derived value disagrees with reality, fix the event stream (backfill), not
+the file.
 
 ## Telemetry
 

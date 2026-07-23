@@ -187,8 +187,9 @@ function cmdLint(): void {
 // ---------- sync (schema-driven derivation) ----------
 // slugify は非可逆なので、異なる id が同じ slug に潰れたら hash suffix で分離する。
 // 実体の同一性は導出キー id: が持つ（slug はファイル名にすぎない）。
-function instancePath(dir: string, type: string, id: string): string {
-  const base = slugify(id);
+// slugId は id と別に渡せる（ループ帰属で衝突する id をループ名前置スラグに逃がすため）。
+function instancePath(dir: string, type: string, id: string, slugId: string = id): string {
+  const base = slugify(slugId);
   const p = join(dir, type, `${base}.md`);
   if (existsSync(p)) {
     const ex = parse(p);
@@ -196,6 +197,36 @@ function instancePath(dir: string, type: string, id: string): string {
       return join(dir, type, `${base}-${createHash('sha256').update(id).digest('hex').slice(0, 6)}.md`);
   }
   return p;
+}
+// 実体の同一性は (loop_id, id) の複合キー — 別ループの同一 id を1実体に融合しない。
+// スラグは id がストア全体で一意なら素の id のまま；別ループに同一 id が現れて衝突する
+// 場合だけ、衝突した全実体をループ名前置スラグ（<loop>-<id>）に逃がす。
+interface IdentityGroup { key: string; loopId: string | null; id: string; events: Ev[] }
+function groupByIdentity(mine: Ev[], idSource: string): IdentityGroup[] {
+  const groups = new Map<string, IdentityGroup>();
+  for (const e of mine) {
+    const id = idOf(e, idSource);
+    if (!id) continue;
+    const key = `${e.loop_id ?? ' '}${id}`;
+    const g = groups.get(key) ?? { key, loopId: e.loop_id, id, events: [] };
+    g.events.push(e);
+    groups.set(key, g);
+  }
+  return [...groups.values()];
+}
+function slugIdsFor(groups: IdentityGroup[]): Map<string, string> {
+  const loopsById = new Map<string, Set<string>>();
+  for (const g of groups) {
+    const s = loopsById.get(g.id) ?? new Set<string>();
+    s.add(g.loopId ?? ' ');
+    loopsById.set(g.id, s);
+  }
+  const slugIds = new Map<string, string>();
+  for (const g of groups) {
+    const collides = (loopsById.get(g.id)?.size ?? 0) > 1;
+    slugIds.set(g.key, collides && g.loopId ? `${g.loopId}-${g.id}` : g.id);
+  }
+  return slugIds;
 }
 const escRe = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 function upsertDerived(path: string, type: string, title: string, derived: Record<string, string | number>): void {
@@ -229,23 +260,25 @@ function cmdSync(): void {
     const verbs = new Set(csv(s.fm.verbs));
     const mine = evs.filter((e) => verbs.has(e.kind));
     if (s.fm.derive === 'ledger') {
-      const by = new Map<string, Ev[]>();
-      for (const e of mine) { const id = idOf(e, s.fm['id-source'] ?? 'loop_id'); if (id) (by.get(id) ?? by.set(id, []).get(id)!).push(e); }
+      const groups = groupByIdentity(mine, s.fm['id-source'] ?? 'loop_id');
+      const slugIds = slugIdsFor(groups);
       mkdirSync(join(dir, type), { recursive: true });
-      for (const [id, es] of by) {
-        upsertDerived(instancePath(dir, type, id), type, id,
-          { id, events: es.length, 'first-event': es[0].ts, 'last-event': es[es.length - 1].ts });
+      for (const g of groups) {
+        const es = g.events;
+        upsertDerived(instancePath(dir, type, g.id, slugIds.get(g.key)), type, g.id,
+          { id: g.id, events: es.length, 'first-event': es[0].ts, 'last-event': es[es.length - 1].ts });
         touched++;
       }
     } else if (s.fm.derive === 'lifecycle') {
       const opens = new Set(csv(s.fm['open-verbs'])); const closes = new Set(csv(s.fm['close-verbs']));
-      const by = new Map<string, Ev[]>();
-      for (const e of mine) { const id = idOf(e, s.fm['id-source'] ?? 'data.id'); if (id) (by.get(id) ?? by.set(id, []).get(id)!).push(e); }
+      const groups = groupByIdentity(mine, s.fm['id-source'] ?? 'data.id');
+      const slugIds = slugIdsFor(groups);
       mkdirSync(join(dir, type), { recursive: true });
-      for (const [id, es] of by) {
+      for (const g of groups) {
+        const es = g.events;
         const last = [...es].reverse().find((e) => opens.has(e.kind) || closes.has(e.kind));
-        upsertDerived(instancePath(dir, type, id), type, id,
-          { id, status: last && closes.has(last.kind) ? 'closed' : 'open', events: es.length, 'last-event': es[es.length - 1].ts });
+        upsertDerived(instancePath(dir, type, g.id, slugIds.get(g.key)), type, g.id,
+          { id: g.id, status: last && closes.has(last.kind) ? 'closed' : 'open', events: es.length, 'last-event': es[es.length - 1].ts });
         touched++;
       }
     } else if (s.fm.derive === 'registry') {
